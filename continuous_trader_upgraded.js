@@ -255,6 +255,16 @@ function calculateSharpe() {
   return (mean / stdDev) * Math.sqrt(1440);
 }
 
+
+function checkCircuitBreaker() {
+  const dailyLossPct = ((dailyStartPnl - totalPnl) / (POSITION_SIZE_SCALED / 100)) * 100;
+  if (dailyLossPct >= MAX_DAILY_LOSS_PCT) {
+    circuitBreaker = true;
+    console.log("CIRCUIT BREAKER TRIGGERED - daily loss " + dailyLossPct.toFixed(2) + "% exceeds " + MAX_DAILY_LOSS_PCT + "%");
+    process.exit(0);
+  }
+}
+
 async function main() {
   loadState();
   // Restore trade returns for Sharpe calculation
@@ -282,6 +292,7 @@ async function main() {
 
       const rsi   = calculateRSI(priceHistory);
       const mom5  = getMomentum(priceHistory, 5);
+      const momentum10 = getMomentum(priceHistory, 10);
       const sharpe = calculateSharpe();
 
       console.log("[" + new Date().toISOString() + "] $" + price.toFixed(2) + " | RSI:" + rsi.toFixed(1) + " | Mom:" + mom5.toFixed(3) + "% | Sharpe:" + sharpe.toFixed(2) + " | PRISM:90% | Pos:" + (state.position || "FLAT"));
@@ -305,7 +316,7 @@ async function main() {
         const reason = signal.action ? signal.reason : (
   "Autonomous entry. Strategy: RSI Mean Reversion + Momentum. " +
   "RSI:" + rsi.toFixed(2) + " Mom5:" + mom5.toFixed(4) + "% " +
-  "SMA20:" + (prices.slice(-20).reduce((a,b)=>a+b)/20).toFixed(2) + " " +
+  "SMA20:" + (priceHistory.slice(-20).reduce((a,b)=>a+b)/20).toFixed(2) + " " +
   "Action:" + (mom5 >= 0 ? "BUY" : "SELL") + " " +
   "Size:$" + (POSITION_SIZE_SCALED/100) + " " +
   "SL:" + STOP_LOSS_PCT + "% TP:" + TAKE_PROFIT_PCT + "% " +
