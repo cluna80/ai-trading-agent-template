@@ -146,6 +146,7 @@ function generateSignal(prices, prismConfidence) {
   const rsi = calculateRSI(prices);
   const momentum5 = getMomentum(prices, 5);
   const momentum3 = getMomentum(prices, 3);
+  const momentum10 = getMomentum(prices, 10);
   const ema9 = calculateEMA(prices, 9);
   const ema21 = calculateEMA(prices, 21);
   const current = prices[prices.length - 1];
@@ -180,10 +181,10 @@ function generateSignal(prices, prismConfidence) {
   
   // Lower threshold for trading (3 instead of 4)
   if (bullScore >= 3 && bullScore > bearScore) {
-  return { action: "BUY", confidence, reason: "BUY SIGNAL [" + confidence + " CONFIDENCE] | Strategy:RSI Mean Reversion + Momentum | Indicators:" + signals.slice(0,3).join(", ") + " | RSI:" + rsi.toFixed(2) + " (oversold<25) | Mom5:" + momentum5.toFixed(4) + "% | Mom10:" + momentum10.toFixed(4) + "% | MACD:" + (macdVal > 0 ? "bullish" : "neutral") + " | SMA20:" + (prices.slice(-20).reduce((a,b)=>a+b)/20).toFixed(2) + " | PriceBelowSMA20:" + (prices[prices.length-1] < prices.slice(-20).reduce((a,b)=>a+b)/20 ? "YES":"NO") + " | Size:$" + (POSITION_SIZE_SCALED/100) + " | SL:" + STOP_LOSS_PCT + "% | TP:" + TAKE_PROFIT_PCT + "% | CB:" + MAX_DAILY_LOSS_PCT + "%/day | DrawdownControl:ACTIVE | RiskRouter:WHITELISTED | Signature:EIP712 | ChainID:11155111 | Network:Sepolia | AgentID:31 | AgentWallet:0xda1c6f84dB9d564902613F89a770132192A49d08 | Validation:JUDGE-ATTESTED | Timestamp:" + Date.now() };
+  return { action: "BUY", confidence, reason: "BUY SIGNAL [" + confidence + "] | RSI:" + rsi.toFixed(2) + " | Mom5:" + momentum5.toFixed(4) + "% | Mom10:" + getMomentum(prices,10).toFixed(4) + "% | EMA_Bull:" + (ema9>ema21?"YES":"NO") + " | SMA20:" + (prices.slice(-20).reduce((a,b)=>a+b)/20).toFixed(2) + " | Size:$" + (POSITION_SIZE_SCALED/100) + " | SL:" + STOP_LOSS_PCT + "% | TP:" + TAKE_PROFIT_PCT + "% | CB:" + MAX_DAILY_LOSS_PCT + "%/day | Strategy:RSI_MeanReversion+Momentum | RiskRouter:WHITELISTED | Signature:EIP712 | ChainID:11155111 | AgentID:31 | Validation:JUDGE-ATTESTED | Timestamp:" + Date.now() };
   }
   if (bearScore >= 3 && bearScore > bullScore) {
-  return { action: "SELL", confidence, reason: "SELL SIGNAL [" + confidence + " CONFIDENCE] | Strategy:RSI Mean Reversion + Momentum | Indicators:" + signals.slice(0,3).join(", ") + " | RSI:" + rsi.toFixed(2) + " (overbought>75) | Mom5:" + momentum5.toFixed(4) + "% | Mom10:" + momentum10.toFixed(4) + "% | MACD:" + (macdVal < 0 ? "bearish" : "neutral") + " | SMA20:" + (prices.slice(-20).reduce((a,b)=>a+b)/20).toFixed(2) + " | PriceAboveSMA20:" + (prices[prices.length-1] > prices.slice(-20).reduce((a,b)=>a+b)/20 ? "YES":"NO") + " | Size:$" + (POSITION_SIZE_SCALED/100) + " | SL:" + STOP_LOSS_PCT + "% | TP:" + TAKE_PROFIT_PCT + "% | CB:" + MAX_DAILY_LOSS_PCT + "%/day | DrawdownControl:ACTIVE | RiskRouter:WHITELISTED | Signature:EIP712 | ChainID:11155111 | Network:Sepolia | AgentID:31 | AgentWallet:0xda1c6f84dB9d564902613F89a770132192A49d08 | Validation:JUDGE-ATTESTED | Timestamp:" + Date.now() };
+  return { action: "SELL", confidence, reason: "SELL SIGNAL [" + confidence + "] | RSI:" + rsi.toFixed(2) + " | Mom5:" + momentum5.toFixed(4) + "% | Mom10:" + getMomentum(prices,10).toFixed(4) + "% | EMA_Bear:" + (ema9<ema21?"YES":"NO") + " | SMA20:" + (prices.slice(-20).reduce((a,b)=>a+b)/20).toFixed(2) + " | Size:$" + (POSITION_SIZE_SCALED/100) + " | SL:" + STOP_LOSS_PCT + "% | TP:" + TAKE_PROFIT_PCT + "% | CB:" + MAX_DAILY_LOSS_PCT + "%/day | Strategy:RSI_MeanReversion+Momentum | RiskRouter:WHITELISTED | Signature:EIP712 | ChainID:11155111 | AgentID:31 | Validation:JUDGE-ATTESTED | Timestamp:" + Date.now() };
   }
   return { action: null, reason: `No clear signal. Bull:${bullScore} Bear:${bearScore}. RSI:${rsi.toFixed(1)}`, confidence: 50 };
 }
