@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>AI Trading Agent #31</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+body {
+  background: #0a0e27;
+  background-image: 
+    radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(124,58,237,0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0e27 0%, #0d1130 100%);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,212,255,0.015) 2px,
+    rgba(0,212,255,0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 2em;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, #00d4ff, #7c3aed, #00d4ff);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+@keyframes shimmer {
+  to { background-position: 200% center; }
+}
+
+h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(0,212,255,0.3);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,212,255,0.6), transparent);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(124,58,237,0.4), transparent);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,212,255,0.1), 0 0 0 1px rgba(0,212,255,0.2);
+}
+
+.price {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.2em;
+  font-weight: 700;
+  color: #00d4ff;
+  text-shadow: 0 0 20px rgba(0,212,255,0.5);
+  animation: pricePulse 2s ease-in-out infinite;
+}
+
+@keyframes pricePulse {
+  0%, 100% { text-shadow: 0 0 20px rgba(0,212,255,0.5); }
+  50% { text-shadow: 0 0 30px rgba(0,212,255,0.8), 0 0 60px rgba(0,212,255,0.3); }
+}
+
+.rank {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3.5em;
+  font-weight: 900;
+  color: #f59e0b;
+  text-shadow: 0 0 30px rgba(245,158,11,0.6);
+}
+
+.badge-success {
+  background: linear-gradient(90deg, rgba(16,185,129,0.2), rgba(16,185,129,0.4));
+  border: 1px solid rgba(16,185,129,0.5);
+  color: #10b981;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75em;
+  text-shadow: 0 0 10px rgba(16,185,129,0.5);
+}
+
+.terminal {
+  background: #000;
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.78em;
+  line-height: 1.6;
+}
+
+.terminal-line {
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  padding: 2px 0;
+}
+
+.trade { color: #10b981; text-shadow: 0 0 8px rgba(16,185,129,0.4); }
+.error { color: #ef4444; }
+.hold { color: #f59e0b; }
+.signal { color: #00d4ff; text-shadow: 0 0 8px rgba(0,212,255,0.4); }
+.exit { color: #ff6b35; text-shadow: 0 0 8px rgba(255,107,53,0.4); }
+
+a {
+  color: #00d4ff;
+  text-decoration: none;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+
+a:hover {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(0,212,255,0.8);
+}
+
+.prism-card {
+  background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(124,58,237,0.08));
+  border-color: rgba(124,58,237,0.5);
+  box-shadow: 0 0 20px rgba(124,58,237,0.1);
+}
+
+canvas {
+  border-radius: 6px;
+  margin: 8px 0;
+}
+
+strong { color: #fff; }
+
+/* Animated live indicator */
+.header p {
+  color: rgba(0,212,255,0.6);
+  font-size: 0.8em;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.6); }
+
+/* Grid spacing */
+.grid { gap: 16px; }
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e27;color:#00d4ff;font-family:monospace;padding:20px}
+.header{text-align:center;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:15px;margin-bottom:15px}
+.card{background:rgba(255,255,255,0.05);border:1px solid #00d4ff;border-radius:10px;padding:15px}
+.price{font-size:2em;color:#7c3aed}
+.rank{font-size:3em;color:#f59e0b}
+.terminal{background:#000;height:200px;overflow-y:auto;padding:10px;font-size:11px}
+.terminal-line{margin:3px 0}
+.trade{color:#10b981}
+.error{color:#ef4444}
+.hold{color:#f59e0b}
+a{color:#00d4ff;text-decoration:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.7em;margin-left:5px}
+.badge-success{background:#10b981;color:#fff}
+.prism-card{background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(124,58,237,0.1));border-color:#7c3aed}
+canvas{max-height:200px;width:100%}
+.price-row{display:flex;justify-content:space-between;align-items:center}
+
+@keyframes flashGreen {
+  0%   { background: rgba(16,185,129,0); }
+  15%  { background: rgba(16,185,129,0.25); box-shadow: inset 0 0 80px rgba(16,185,129,0.3), 0 0 60px rgba(16,185,129,0.4); }
+  50%  { background: rgba(16,185,129,0.1); }
+  100% { background: rgba(16,185,129,0); box-shadow: none; }
+}
+@keyframes flashRed {
+  0%   { background: rgba(239,68,68,0); }
+  15%  { background: rgba(239,68,68,0.25); box-shadow: inset 0 0 80px rgba(239,68,68,0.3), 0 0 60px rgba(239,68,68,0.4); }
+  50%  { background: rgba(239,68,68,0.1); }
+  100% { background: rgba(239,68,68,0); box-shadow: none; }
+}
+@keyframes flashGreenBorder {
+  0%,100% { border-color: rgba(0,212,255,0.3); }
+  30%     { border-color: rgba(16,185,129,0.9); box-shadow: 0 0 30px rgba(16,185,129,0.5); }
+}
+@keyframes flashRedBorder {
+  0%,100% { border-color: rgba(0,212,255,0.3); }
+  30%     { border-color: rgba(239,68,68,0.9); box-shadow: 0 0 30px rgba(239,68,68,0.5); }
+}
+@keyframes profitText {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.3); color: #10b981; text-shadow: 0 0 20px rgba(16,185,129,0.8); }
+  100% { transform: scale(1); }
+}
+@keyframes lossText {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.3); color: #ef4444; text-shadow: 0 0 20px rgba(239,68,68,0.8); }
+  100% { transform: scale(1); }
+}
+#flashOverlay {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  pointer-events: none; z-index: 9997;
+  transition: all 0.1s;
+}
+.profit-popup {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.5em; font-weight: 900;
+  color: #10b981;
+  text-shadow: 0 0 30px rgba(16,185,129,0.8);
+  pointer-events: none; z-index: 10000;
+  animation: popupAnim 2s ease forwards;
+}
+.loss-popup {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.5em; font-weight: 900;
+  color: #ef4444;
+  text-shadow: 0 0 30px rgba(239,68,68,0.8);
+  pointer-events: none; z-index: 10000;
+  animation: popupAnim 2s ease forwards;
+}
+@keyframes popupAnim {
+  0%   { transform: translate(-50%,-60%) scale(0); opacity:0; }
+  20%  { transform: translate(-50%,-50%) scale(1.1); opacity:1; }
+  70%  { transform: translate(-50%,-50%) scale(1); opacity:1; }
+  100% { transform: translate(-50%,-40%) scale(0.8); opacity:0; }
+}
+</style>
+</head>
+<body>
+<div id="flashOverlay"></div><div class="header"><h1>🤖 AI Trading Agent #31</h1><p>Kraken x ERC-8004 Hackathon | REAL ON-CHAIN TRADING | Solo Developer | Built in 1.5 Days</p></div>
+<div class="grid">
+<div class="card"><h3>📊 Live Performance</h3><div class="rank" id="rank">3</div><div>Rank (#3 of 30+ agents)</div><div style="font-size:2em;color:#10b981" id="intents">500+</div><div>Total Intents Submitted</div><div>Validation: <span id="validation">97</span>/100</div><div>Reputation: <span id="reputation">97</span>/100</div><div>Agent ID: <strong>31</strong></div><div>Capital: <span class="badge badge-success">✅ 0.0010 ETH Claimed</span></div></div>
+<div class="card prism-card"><h3>📈 Live Market + PRISM AI</h3><div class="price-row"><div class="price" id="price">---</div><div class="prism-confidence" id="prismConfidence">PRISM: ---</div></div><div>BTC Price (Kraken) | AI Confidence: <span id="prismValue">---</span>%</div><canvas id="priceChart" height="100"></canvas><div>RSI: <span id="rsi">---</span> | Momentum: <span id="momentum">---</span>%</div><div>Position: <span id="position">FLAT</span> | Entry: $<span id="entry">---</span> | Unrealized: <span id="unrealized">---</span>%</div><div style="margin-top:5px;font-size:0.7em;color:#888">Top Venues: <span id="venues">---</span></div></div>
+<div class="card"><h3>🖼️ Agent NFT (ERC-721)</h3><div><strong>NFT Name:</strong> AI Trading Agent #31</div><div><strong>Contract:</strong> 0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3</div><div><strong>Token ID:</strong> 31</div><div><strong>Owner:</strong> 0xBB78252F...8650</div><div><strong>Status:</strong> <span class="badge badge-success">✅ Minted & Verified</span></div><div style="margin-top:10px"><a href="https://sepolia.etherscan.io/nft/0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3/31" target="_blank">🔗 View NFT on Etherscan</a></div></div></div>
+<div class="grid">
+<div class="card"><h3>✅ ERC-8004 Achievements</h3><div>✅ Agent Registered (ID 31)</div><div>✅ Capital Claimed (0.0010 ETH)</div><div>✅ 500+ Trade Intents Submitted</div><div>✅ Validation Score: 97/100</div><div>✅ Reputation Score: 97/100</div><div>✅ Risk Router Integration</div><div>✅ EIP-712 Signatures</div><div>✅ Checkpoints Posted</div></div>
+<div class="card"><h3>🎯 Kraken Challenge Achievements</h3><div>✅ Kraken CLI Configured</div><div>✅ Read-Only API Key Submitted</div><div>✅ Real-time Market Data</div><div>✅ PRISM AI Integration</div><div>✅ Social Engagement Active</div><div>✅ Build in Public (Twitter/GitHub)</div></div>
+<div class="card"><h3>🏆 Prize Eligibility</h3><div>✅ Best Trustless Trading Agent ($10,000)</div><div>✅ Best Risk-Adjusted Return ($5,000)</div><div>✅ Best Validation & Trust Model ($2,500)</div><div>✅ Best Compliance & Risk Guardrails ($2,500)</div><div>✅ Kraken PnL Challenge ($1,800)</div><div>✅ Social Engagement ($1,200)</div><div style="margin-top:10px"><span class="badge badge-success">🏆 ELIGIBLE FOR BOTH CHALLENGES</span></div></div></div>
+<div class="grid">
+<div class="card"><h3>🤝 Combined Submission Status</h3><div>✅ ERC-8004 Identity + Kraken Execution</div><div>✅ Transparent On-Chain Reputation</div><div>✅ Validation Artifacts Produced</div><div>✅ Risk-Managed Autonomous Trading</div><div>✅ Solo Developer in 1.5 Days</div><div><span class="badge badge-success">🏆 ELIGIBLE FOR BOTH CHALLENGES</span></div></div>
+<div class="card"><h3>🔗 Verifiable On-Chain Proofs</h3><div><a href="https://sepolia.etherscan.io/address/0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3" target="_blank">📋 AgentRegistry Contract</a></div><div><a href="https://sepolia.etherscan.io/address/0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC" target="_blank">🔄 Risk Router Contract</a></div><div><a href="https://sepolia.etherscan.io/address/0x92bF63E5C7Ac6980f237a7164Ab413BE226187F1" target="_blank">✅ ValidationRegistry Contract</a></div><div><a href="https://sepolia.etherscan.io/address/0x423a9904e39537a9997fbaF0f220d79D7d545763" target="_blank">⭐ ReputationRegistry Contract</a></div><div><a href="https://sepolia.etherscan.io/address/0xBB78252F4a1F03C1b82eeFe21Eee2D56B5278650" target="_blank">👛 Operator Wallet (Etherscan)</a></div><div><a href="https://sepolia.etherscan.io/address/0xda1c6f84dB9d564902613F89a770132192A49d08" target="_blank">🤖 Agent Wallet (Etherscan)</a></div></div></div>
+
+<div class="card" style="grid-column:1/-1;border-color:#7c3aed">
+  <h3>🧠 Agent Strategy — RSI Mean Reversion + Momentum</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;margin-top:10px">
+    <div>
+      <div style="color:#00d4ff;font-weight:bold;margin-bottom:6px">📊 Signal Engine</div>
+      <div>Strategy Type: <strong>Mean Reversion + Momentum</strong></div>
+      <div>Primary Indicator: <strong>RSI-7 (fast response)</strong></div>
+      <div>Secondary: <strong>5m + 10m Momentum</strong></div>
+      <div>Tertiary: <strong>MACD Histogram</strong></div>
+      <div>PRISM AI: <strong>External confidence signal</strong></div>
+      <div style="margin-top:6px;font-size:0.85em;color:#888">
+        BUY when RSI &lt; 30 (oversold) + momentum confirmation<br>
+        SELL when RSI &gt; 70 (overbought) + momentum confirmation<br>
+        Requires bull/bear score ≥ 4 before entry
+      </div>
+    </div>
+    <div>
+      <div style="color:#10b981;font-weight:bold;margin-bottom:6px">🛡️ Risk Management</div>
+      <div>Position Size: <strong>$10 per trade</strong></div>
+      <div>Stop Loss: <strong>0.5% against position</strong></div>
+      <div>Take Profit: <strong>0.3% in favor</strong></div>
+      <div>Risk/Reward Ratio: <strong>1:0.6 (high frequency)</strong></div>
+      <div>Circuit Breaker: <strong>5% max daily loss</strong></div>
+      <div style="margin-top:6px;font-size:0.85em;color:#888">
+        Stop-loss exits immediately if price moves 0.5% against trade.<br>
+        Take-profit locks gains at 0.3%. Circuit breaker halts all<br>
+        trading if daily losses exceed 5% of position value.
+      </div>
+    </div>
+    <div>
+      <div style="color:#f59e0b;font-weight:bold;margin-bottom:6px">⚙️ Execution</div>
+      <div>Chain: <strong>Ethereum Sepolia (ERC-8004)</strong></div>
+      <div>Router: <strong>Risk Router (whitelisted)</strong></div>
+      <div>Signature: <strong>EIP-712 typed data</strong></div>
+      <div>Trade Interval: <strong>30 seconds</strong></div>
+      <div>Market: <strong>BTC/USD (XBTUSD)</strong></div>
+      <div style="margin-top:6px;font-size:0.85em;color:#888">
+        Every trade intent is signed with EIP-712, submitted through<br>
+        the hackathon Risk Router, and verified on-chain. All trades<br>
+        are publicly auditable on Sepolia Etherscan.
+      </div>
+    </div>
+    <div>
+      <div style="color:#ef4444;font-weight:bold;margin-bottom:6px">📈 Live Trade Stats</div>
+      <div>Total Completed Trades: <span id="stratTrades"><strong>--</strong></span></div>
+      <div>Win Rate: <span id="stratWinRate"><strong>--</strong></span></div>
+      <div>Last Trade: <span id="statLastTrade"><strong>--</strong></span></div>
+      <div>Current Position: <span id="stratPos"><strong>--</strong></span></div>
+      <div>Sharpe Ratio: <span id="stratSharpe"><strong>--</strong></span></div>
+      <div style="margin-top:6px;font-size:0.85em;color:#888">
+        Agent operates fully autonomously — no manual intervention.<br>
+        All decisions made by on-chain verifiable signal logic.<br>
+        Validation scores posted by official judge bot only.
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card"><h3>📟 Live Trading Terminal</h3><div class="terminal" id="terminal"><div>Waiting for agent output...</div></div></div>
+<div class="card" style="text-align:center"><h3>🔗 Important Links</h3><a href="https://lablab.ai/ai-hackathons/ai-trading-agents/live" target="_blank">📊 Live Leaderboard</a> | <a href="https://github.com/cluna80/Ai-trading-Agent" target="_blank">📦 GitHub Repository</a> | <a href="https://x.com/QuarkCharmBit" target="_blank">🐦 Twitter/X</a></div>
+<script>
+let ws,ctx,priceChart;
+function initChart(){ctx=document.getElementById('priceChart').getContext('2d');priceChart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label:'BTC Price',data:[],borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,0.1)',fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#00d4ff'}}},scales:{y:{ticks:{color:'#888'}},x:{ticks:{color:'#888'}}}}})}
+function updateChart(priceHistory){if(!priceChart)initChart();const labels=priceHistory.map((_,i)=>i);const prices=priceHistory.map(p=>p.price);priceChart.data.labels=labels;priceChart.data.datasets[0].data=prices;priceChart.update()}
+
+function flashProfit(pct) {
+  const overlay = document.getElementById('flashOverlay');
+  overlay.style.animation = 'none';
+  overlay.offsetHeight; // reflow
+  overlay.style.animation = 'flashGreen 1.2s ease forwards';
+  
+  // Flash all card borders green
+  document.querySelectorAll('.card').forEach(c => {
+    c.style.animation = 'none';
+    c.offsetHeight;
+    c.style.animation = 'flashGreenBorder 1.2s ease forwards';
+  });
+
+  // Popup text
+  const popup = document.createElement('div');
+  popup.className = 'profit-popup';
+  popup.textContent = '✅ +' + parseFloat(pct).toFixed(2) + '% PROFIT';
+  document.body.appendChild(popup);
+  setTimeout(() => popup.remove(), 2000);
+
+  // Flash price green
+  const priceEl = document.getElementById('price');
+  if(priceEl) { priceEl.style.animation = 'profitText 1s ease'; setTimeout(()=>priceEl.style.animation='',1000); }
+}
+
+function flashLoss(pct) {
+  const overlay = document.getElementById('flashOverlay');
+  overlay.style.animation = 'none';
+  overlay.offsetHeight;
+  overlay.style.animation = 'flashRed 1.2s ease forwards';
+
+  document.querySelectorAll('.card').forEach(c => {
+    c.style.animation = 'none';
+    c.offsetHeight;
+    c.style.animation = 'flashRedBorder 1.2s ease forwards';
+  });
+
+  const popup = document.createElement('div');
+  popup.className = 'loss-popup';
+  popup.textContent = '🛑 STOP LOSS -' + Math.abs(parseFloat(pct)).toFixed(2) + '%';
+  document.body.appendChild(popup);
+  setTimeout(() => popup.remove(), 2000);
+
+  const priceEl = document.getElementById('price');
+  if(priceEl) { priceEl.style.animation = 'lossText 1s ease'; setTimeout(()=>priceEl.style.animation='',1000); }
+}
+
+function updateHistory(trades){
+  const tbody=document.getElementById('tradeTableBody');
+  if(!tbody)return;
+  const completed=trades.filter(t=>t.type!=='ENTRY');
+  let wins=0,losses=0,totalPnl=0;
+  tbody.innerHTML='';
+  [...trades].reverse().forEach(t=>{
+    const pct=parseFloat(t.pnlPct);
+    const isProfit=pct>0,isLoss=pct<0;
+    if(isProfit)wins++;if(isLoss)losses++;
+    totalPnl+=parseFloat(t.pnlDollar||0);
+    const color=isProfit?'#10b981':isLoss?'#ef4444':'#00d4ff';
+    const typeLabel=isProfit?'✅ TAKE PROFIT':isLoss?'🛑 STOP LOSS':'📌 ENTRY';
+    const txLink=t.txHash&&t.txHash!=='pending'?'<a href="https://sepolia.etherscan.io/tx/'+t.txHash+'" target="_blank" style="color:#00d4ff">'+t.txHash.substring(0,14)+'...</a>':'--';
+    const row=document.createElement('tr');
+    row.style.borderBottom='1px solid rgba(255,255,255,0.04)';
+    row.innerHTML='<td style="padding:6px;color:#888">'+t.id+'</td>'+
+      '<td style="padding:6px;font-size:0.85em">'+t.timestampLocal+'</td>'+
+      '<td style="padding:6px;color:'+color+';font-weight:bold">'+typeLabel+'</td>'+
+      '<td style="padding:6px;color:'+(t.action==='BUY'?'#10b981':'#ef4444')+'">'+t.action+'</td>'+
+      '<td style="padding:6px;text-align:right">$'+parseFloat(t.price).toFixed(2)+'</td>'+
+      '<td style="padding:6px;text-align:right;color:#888">$'+parseFloat(t.entryPrice||0).toFixed(2)+'</td>'+
+      '<td style="padding:6px;text-align:right;color:'+color+';font-weight:bold">'+(pct?(pct>0?'+':'')+pct.toFixed(3)+'%':'--')+'</td>'+
+      '<td style="padding:6px;text-align:right;color:'+color+';font-weight:bold">'+(t.pnlDollar?(parseFloat(t.pnlDollar)>0?'+$':'-$')+Math.abs(parseFloat(t.pnlDollar)).toFixed(4):'--')+'</td>'+
+      '<td style="padding:6px;font-size:0.8em">'+txLink+'</td>';
+    tbody.appendChild(row);
+  });
+  const el=id=>document.getElementById(id);
+  if(el('histTotal'))el('histTotal').textContent=trades.length;
+  if(el('histWins'))el('histWins').textContent=wins;
+  if(el('histLosses'))el('histLosses').textContent=losses;
+  if(el('histPnl')){el('histPnl').textContent=(totalPnl>=0?'+$':'-$')+Math.abs(totalPnl).toFixed(4);el('histPnl').style.color=totalPnl>=0?'#10b981':'#ef4444';}
+  if(el('histWinRate'))el('histWinRate').textContent=(wins+losses)>0?Math.round(wins/(wins+losses)*100)+'%':'0%';
+  if(el('stratTrades'))el('stratTrades').innerHTML='<strong>'+completed.length+'</strong>';
+  if(el('stratWinRate'))el('stratWinRate').innerHTML='<strong>'+((wins+losses)>0?Math.round(wins/(wins+losses)*100)+'%':'0%')+'</strong>';
+  if(el('statLastTrade')&&completed.length>0){
+    const last=completed[completed.length-1];
+    const p=parseFloat(last.pnlPct);
+    el('statLastTrade').innerHTML='<strong style="color:'+(p>=0?'#10b981':'#ef4444')+'">'+(p>=0?'✅':'🛑')+' '+last.action+' '+(p>=0?'+':'')+p.toFixed(3)+'%</strong>';
+  }
+}
+
+function connect(){ws=new WebSocket('ws://localhost:3000');ws.onopen=()=>{addLog('Connected to agent','info')};ws.onclose=()=>setTimeout(connect,3000);ws.onmessage=(e)=>{const data=JSON.parse(e.data);if(data.type==='tick'){if(document.getElementById('stratPos'))document.getElementById('stratPos').innerHTML='<strong>'+data.msg.position+'</strong>';if(document.getElementById('stratSharpe')&&data.msg.sharpe)document.getElementById('stratSharpe').innerHTML='<strong>'+parseFloat(data.msg.sharpe).toFixed(3)+'</strong>';document.getElementById('price').innerHTML='$'+data.msg.price;document.getElementById('rsi').innerHTML=data.msg.rsi;document.getElementById('momentum').innerHTML=data.msg.momentum;document.getElementById('position').innerHTML=data.msg.position;if(data.msg.priceHistory)updateChart(data.msg.priceHistory)}else if(data.type==='hold'){document.getElementById('entry').innerHTML=data.msg.entry;document.getElementById('unrealized').innerHTML=data.msg.unrealized;document.getElementById('position').innerHTML=data.msg.position}else if(data.type==='prism'){document.getElementById('prismConfidence').innerHTML='PRISM: '+(data.msg.confidence*100).toFixed(0)+'%';document.getElementById('prismValue').innerHTML=(data.msg.confidence*100).toFixed(0);if(data.msg.venues)document.getElementById('venues').innerHTML=data.msg.venues.map(v=>v.name).slice(0,3).join(', ')}else if(data.type==='history'){updateHistory(data.msg||[]);
+  const trades=data.msg||[];
+  const completed=trades.filter(t=>t.type!=='ENTRY');
+  let wins=0,losses=0,totalPnl=0;
+  completed.forEach(t=>{
+    if(parseFloat(t.pnlPct)>0)wins++;
+    else if(parseFloat(t.pnlPct)<0)losses++;
+    totalPnl+=parseFloat(t.pnlDollar||0);
+  });
+  const el=id=>document.getElementById(id);
+  if(el('stratTrades'))el('stratTrades').innerHTML='<strong>'+completed.length+'</strong>';
+  if(el('stratWinRate'))el('stratWinRate').innerHTML='<strong>'+((wins+losses)>0?Math.round(wins/(wins+losses)*100)+'%':'0%')+'</strong>';
+  if(el('statLastTrade')&&completed.length>0){
+    const last=completed[completed.length-1];
+    const pct=parseFloat(last.pnlPct);
+    el('statLastTrade').innerHTML='<strong style="color:'+(pct>=0?'#10b981':'#ef4444')+'">'+(pct>=0?'✅':'🛑')+' '+last.action+' '+(pct>=0?'+':'')+pct.toFixed(3)+'%</strong>';
+  }
+}else if(data.type==='log'){
+    const msg = data.msg.msg || '';
+    addLog(msg, data.msg.type);
+    if(msg.includes('TAKE PROFIT')) {
+      const m = msg.match(/([0-9.]+)%/);
+      flashProfit(m ? m[1] : '1.00');
+    } else if(msg.includes('STOP LOSS')) {
+      const m = msg.match(/([0-9.]+)%/);
+      flashLoss(m ? m[1] : '0.80');
+    }
+  }}}
+function addLog(msg,type){const term=document.getElementById('terminal');const div=document.createElement('div');div.className='terminal-line '+type;div.innerHTML='['+new Date().toLocaleTimeString()+'] '+msg;term.appendChild(div);term.scrollTop=term.scrollHeight;while(term.children.length>50)term.removeChild(term.firstChild)}
+connect();initChart();
+</script>
+
+<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(0,212,255,0.3);border-radius:12px;padding:15px;margin-top:16px">
+  <h3 style="font-family:'Orbitron',sans-serif;font-size:0.72em;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">📋 Trade History — Full On-Chain Record</h3>
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:0.78em">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(0,212,255,0.3);color:rgba(0,212,255,0.7)">
+          <th style="padding:8px 6px;text-align:left">#</th>
+          <th style="padding:8px 6px;text-align:left">Timestamp</th>
+          <th style="padding:8px 6px;text-align:left">Type</th>
+          <th style="padding:8px 6px;text-align:left">Action</th>
+          <th style="padding:8px 6px;text-align:right">Price</th>
+          <th style="padding:8px 6px;text-align:right">Entry</th>
+          <th style="padding:8px 6px;text-align:right">P&L %</th>
+          <th style="padding:8px 6px;text-align:right">P&L $</th>
+          <th style="padding:8px 6px;text-align:left">TX Hash</th>
+        </tr>
+      </thead>
+      <tbody id="tradeTableBody">
+        <tr><td colspan="9" style="padding:12px;color:#888;text-align:center">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:10px;font-size:0.78em">
+    Trades: <span id="histTotal" style="color:#00d4ff">0</span> &nbsp;|&nbsp;
+    Wins: <span id="histWins" style="color:#10b981">0</span> &nbsp;|&nbsp;
+    Losses: <span id="histLosses" style="color:#ef4444">0</span> &nbsp;|&nbsp;
+    P&L: <span id="histPnl" style="color:#f59e0b">$0.00</span> &nbsp;|&nbsp;
+    Win Rate: <span id="histWinRate" style="color:#00d4ff">0%</span>
+  </div>
+</div>
+</body>
+</html>

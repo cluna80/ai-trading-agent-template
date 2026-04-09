@@ -1,0 +1,9 @@
+.env
+node_modules/
+*.mp4
+*.png
+*.backup
+*.log
+Recording*
+Screenshot*
+agent_state.json
