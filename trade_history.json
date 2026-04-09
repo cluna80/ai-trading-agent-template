@@ -208,38 +208,5 @@
     "agentId": 31,
     "txHash": "0xf27fe3d2f6549d30289338443ff7c0de87363b190a8080142271d4e9f8cd5b3c",
     "chain": "Sepolia"
-<<<<<<< HEAD
-=======
-  },
-  {
-    "id": 15,
-    "timestamp": "2026-04-09T14:39:58.416Z",
-    "timestampLocal": "4/9/2026, 8:39:58 AM",
-    "type": "TAKE_PROFIT",
-    "action": "SELL",
-    "price": 70800.5,
-    "entryPrice": 70560,
-    "pnlPct": 0.34084467120181405,
-    "pnlDollar": "0.0341",
-    "positionSize": 10,
-    "agentId": 31,
-    "txHash": "0x780f90850edc23c3cd8c86ab505fd9f88731ecbd51a88663c796f4849848fc90",
-    "chain": "Sepolia"
-  },
-  {
-    "id": 16,
-    "timestamp": "2026-04-09T14:50:58.613Z",
-    "timestampLocal": "4/9/2026, 8:50:58 AM",
-    "type": "STOP_LOSS",
-    "action": "BUY",
-    "price": 71171.2,
-    "entryPrice": 70800.5,
-    "pnlPct": -0.523583872995243,
-    "pnlDollar": "-0.0524",
-    "positionSize": 10,
-    "agentId": 31,
-    "txHash": "0x0177319983f37399ab962bb2d5df7c955df1b637800565ae4e593ce3c32b7922",
-    "chain": "Sepolia"
->>>>>>> 3e7a661
   }
 ]

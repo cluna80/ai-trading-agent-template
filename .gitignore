@@ -7,3 +7,4 @@ node_modules/
 Recording*
 Screenshot*
 agent_state.json
+trade_history.json
