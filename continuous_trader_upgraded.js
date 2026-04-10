@@ -12,7 +12,7 @@ const RISK_ROUTER = "0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC";
 
 // ─── AGGRESSIVE RISK PARAMETERS ─────────────────────────────────────────────
 const STOP_LOSS_PCT = 0.8;
-const TAKE_PROFIT_PCT = 0.2;
+const TAKE_PROFIT_PCT      = 0.2;
 const POSITION_SIZE_SCALED  = 1000;   // $10 per trade
 const MAX_SLIPPAGE_BPS      = 100;    
 const TRADE_INTERVAL_MS    = 30000; // 30 seconds
@@ -310,9 +310,23 @@ async function main() {
 
       const signal = generateSignal(priceHistory);
 
-      // 2. If FLAT — always enter something
+      // 2. If FLAT — only enter WITH the trend
       if (!state.position) {
-        const action = signal.action || (mom5 >= 0 ? "BUY" : "SELL");
+        // Trend filter: use 20-period SMA to determine trend direction
+        const sma20 = priceHistory.slice(-20).reduce((a,b)=>a+b,0) / Math.min(20, priceHistory.length);
+        const trendUp = price > sma20;
+        const trendDown = price < sma20;
+        
+        // Only BUY if price is above SMA20 (uptrend) or strong oversold signal
+        // Only SELL if price is below SMA20 (downtrend) or strong overbought signal
+        let trendAction = null;
+        if (signal.action === "BUY" && (trendUp || rsi < 25)) trendAction = "BUY";
+        else if (signal.action === "SELL" && (trendDown || rsi > 75)) trendAction = "SELL";
+        else if (!signal.action && trendUp) trendAction = "BUY";
+        else if (!signal.action && trendDown) trendAction = "SELL";
+        else trendAction = mom5 >= 0 ? "BUY" : "SELL"; // fallback
+
+        const action = trendAction;
         const conf   = signal.action ? signal.confidence : "Momentum";
         const reason = signal.action ? signal.reason : (
   "Autonomous entry. Strategy: RSI Mean Reversion + Momentum. " +
