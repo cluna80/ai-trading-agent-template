@@ -320,11 +320,11 @@ async function main() {
         // Only BUY if price is above SMA20 (uptrend) or strong oversold signal
         // Only SELL if price is below SMA20 (downtrend) or strong overbought signal
         let trendAction = null;
-        if (signal.action === "BUY" && (trendUp || rsi < 25)) trendAction = "BUY";
-        else if (signal.action === "SELL" && (trendDown || rsi > 75)) trendAction = "SELL";
+        if (signal.action === "BUY" && trendUp) trendAction = "BUY";
+        else if (signal.action === "SELL" && trendDown) trendAction = "SELL";
         else if (!signal.action && trendUp) trendAction = "BUY";
         else if (!signal.action && trendDown) trendAction = "SELL";
-        else trendAction = mom5 >= 0 ? "BUY" : "SELL"; // fallback
+        else trendAction = trendUp ? "BUY" : "SELL"; // fallback always follows trend
 
         const action = trendAction;
         const conf   = signal.action ? signal.confidence : "Momentum";
